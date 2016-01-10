@@ -116,7 +116,14 @@ fn make_plague<'cx, 'a>(
 
     let mut fns = Vec::with_capacity(params.node.len());
 
-    fns.push(cx.item( fn_span, ident, Vec::new(), fn_));
+    let unused = cx.attribute(fn_span, cx.meta_list(
+            fn_span,
+            interner.intern("allow").as_str(),
+            vec![
+                cx.meta_word(fn_span, interner.intern("unused").as_str())
+            ]
+    ));
+    fns.push(cx.item( fn_span, ident, vec![unused], fn_));
 
     let attributes = {
         let make_attr = |name| {
