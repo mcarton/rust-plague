@@ -1,0 +1,11 @@
+[package]
+authors = ["mcarton <cartonmartin+git@gmail.com>"]
+description = "Parametrized tests tools"
+name = "plague"
+version = "0.1.0"
+
+[lib]
+name = "plague"
+plugin = true
+
+[dependencies]
