@@ -1,7 +1,10 @@
 [package]
 authors = ["mcarton <cartonmartin+git@gmail.com>"]
 description = "Parametrized tests tools"
+license = "MIT"
 name = "plague"
+keywords = ["parametrized", "test"]
+repository = "https://github.com/mcarton/rust-plague"
 version = "0.2.0"
 
 [lib]
