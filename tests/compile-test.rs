@@ -15,6 +15,7 @@ fn run_mode(mode: &'static str) {
 
     config.mode = cfg_mode;
     config.src_base = PathBuf::from(format!("tests/{}", mode));
+    config.target_rustcflags = Some("--test -L target/debug".into());
 
     compiletest::run_tests(&config);
 }
