@@ -7,10 +7,10 @@ extern crate syntax;
 
 use rustc_plugin::Registry;
 use syntax::abi::Abi;
+use syntax::ast::Expr_::ExprTup;
 use syntax::ast::Item_::ItemFn;
 use syntax::ast::{Constness, Expr, FnDecl, FunctionRetTy, Generics, Ident, Item_, TokenTree, Unsafety};
 use syntax::codemap::{DUMMY_SP, Span, Spanned};
-use syntax::errors::DiagnosticBuilder;
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::ext::build::AstBuilder;
 use syntax::parse::PResult;
@@ -34,13 +34,12 @@ pub fn plague_macro<'cx>(cx: &'cx mut ExtCtxt, span: Span, tts: &[TokenTree]) ->
 
     match parse_plague(&mut parser) {
         Ok((params, ident, item, should_panic)) => {
-            let plague = make_plague(cx, params, ident, item, should_panic);
-            if false {
-                println!("{:#?}", plague.make_items().as_ref().map(SmallVector::as_slice));
-                DummyResult::any(span)
-            }
-            else {
-                plague
+            match make_plague(cx, &mut parser, params, ident, item, should_panic) {
+                Ok(r) => r,
+                Err(mut err) => {
+                    err.emit();
+                    DummyResult::any(span)
+                }
             }
         }
         Err(mut err) => {
@@ -90,11 +89,24 @@ fn expect_keyword<'a>(parser: &mut Parser<'a>, kw: &str) -> PResult<'a, ()> {
     }
 }
 
-fn make_plague<'cx>(cx: &'cx mut ExtCtxt, params: Spanned<Vec<P<Expr>>>, ident: Ident, fn_: Item_, should_panic: bool) -> Box<MacResult + 'cx> {
-    let mut fns = Vec::with_capacity(params.node.len());
+fn make_plague<'cx, 'a>(
+    cx: &'cx mut ExtCtxt,
+    parser: &mut Parser<'a>,
+    params: Spanned<Vec<P<Expr>>>,
+    ident: Ident,
+    fn_: Item_,
+    should_panic: bool
+) -> PResult<'a, Box<MacResult + 'cx>> {
+    let unpack_tuple = if let &ItemFn(ref decl, _, _, _, _, _) = &fn_ {
+        decl.inputs.len() > 1
+    }
+    else {
+        panic!();
+    };
 
-    let sc = ident.ctxt;
     let interner = get_ident_interner();
+
+    let mut fns = Vec::with_capacity(params.node.len());
 
     fns.push(cx.item(
         DUMMY_SP, // TODO
@@ -116,22 +128,29 @@ fn make_plague<'cx>(cx: &'cx mut ExtCtxt, params: Spanned<Vec<P<Expr>>>, ident: 
         }
     };
 
+    let span = params.span;
     for (i, param) in params.node.iter().enumerate() {
-        let fn_ = make_test_fn(cx, ident, param.clone());
+        let params = try!(make_params(parser, &param, unpack_tuple));
+        let fn_ = make_test_fn(cx, span, ident, params);
 
         fns.push(cx.item(
-            params.span,
-            Ident::new(interner.intern(&format!("{}_{}", ident.name, i)), sc),
+            span,
+            Ident::new(interner.intern(&format!("{}_{}", ident.name, i)), ident.ctxt),
             attributes.clone(),
             fn_
         ));
     }
 
-    MacEager::items(SmallVector::many(fns))
+    Ok(MacEager::items(SmallVector::many(fns)))
 }
 
-fn make_test_fn<'cx>(cx: &'cx mut ExtCtxt, ident: Ident, params: P<Expr>) -> Item_ {
-    let call = cx.expr_call_ident(params.span, ident, vec![params]);
+fn make_test_fn<'cx>(
+    cx: &'cx mut ExtCtxt,
+    span: Span,
+    ident: Ident,
+    params: Vec<P<Expr>>
+) -> Item_ {
+    let call = cx.expr_call_ident(span, ident, params);
     let block = cx.block_expr(call);
 
     Item_::ItemFn(
@@ -142,4 +161,20 @@ fn make_test_fn<'cx>(cx: &'cx mut ExtCtxt, ident: Ident, params: P<Expr>) -> Ite
         Generics::default(),
         block
     )
+}
+
+fn make_params<'a>(
+    parser: &mut Parser<'a>,
+    params: &P<Expr>,
+    unpack_tuple: bool
+) -> PResult<'a, Vec<P<Expr>>> {
+    if !unpack_tuple {
+        Ok(vec![params.clone()])
+    }
+    else if let ExprTup(ref params) = params.node {
+        Ok(params.clone())
+    }
+    else {
+        Err(parser.span_fatal(params.span, "expected tuple, the test function has several arguments"))
+    }
 }
