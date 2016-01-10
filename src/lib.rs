@@ -33,8 +33,8 @@ pub fn plague_macro<'cx>(cx: &'cx mut ExtCtxt, span: Span, tts: &[TokenTree]) ->
     let mut parser = cx.new_parser_from_tts(tts);
 
     match parse_plague(&mut parser) {
-        Ok((params, ident, item, should_panic)) => {
-            match make_plague(cx, &mut parser, params, ident, item, should_panic) {
+        Ok((params, ident, item, should_panic, fn_span)) => {
+            match make_plague(cx, &mut parser, params, ident, item, should_panic, fn_span) {
                 Ok(r) => r,
                 Err(mut err) => {
                     err.emit();
@@ -49,7 +49,7 @@ pub fn plague_macro<'cx>(cx: &'cx mut ExtCtxt, span: Span, tts: &[TokenTree]) ->
     }
 }
 
-fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<P<Expr>>>, Ident, Item_, bool)> {
+fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<P<Expr>>>, Ident, Item_, bool, Span)> {
     try!(parser.expect_keyword(Keyword::For));
 
     let params = try!(parser.parse_seq(
@@ -63,6 +63,7 @@ fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<P<Expr>
 
     let should_panic = try!(parser.eat(&Token::Not));
 
+    let mut span = parser.span;
     let (constness, unsafety, abi) = try!(parser.parse_fn_front_matter());
 
     // Yep, copy-pasted pieces from libsyntax
@@ -73,7 +74,9 @@ fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<P<Expr>
     let body = try!(parser.parse_block());
     let fn_ = ItemFn(decl, unsafety, constness, abi, generics, body);
 
-    Ok((params, ident, fn_, should_panic))
+    span.hi = parser.last_span.hi;
+
+    Ok((params, ident, fn_, should_panic, span))
 }
 
 fn expect_keyword<'a>(parser: &mut Parser<'a>, kw: &str) -> PResult<'a, ()> {
@@ -95,7 +98,8 @@ fn make_plague<'cx, 'a>(
     params: Spanned<Vec<P<Expr>>>,
     ident: Ident,
     fn_: Item_,
-    should_panic: bool
+    should_panic: bool,
+    fn_span: Span
 ) -> PResult<'a, Box<MacResult + 'cx>> {
     let unpack_tuple = if let &ItemFn(ref decl, _, _, _, _, _) = &fn_ {
         decl.inputs.len() > 1
@@ -108,12 +112,7 @@ fn make_plague<'cx, 'a>(
 
     let mut fns = Vec::with_capacity(params.node.len());
 
-    fns.push(cx.item(
-        DUMMY_SP, // TODO
-        ident,
-        Vec::new(),
-        fn_
-    ));
+    fns.push(cx.item( fn_span, ident, Vec::new(), fn_));
 
     let attributes = {
         let make_attr = |name| {
