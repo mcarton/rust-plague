@@ -8,5 +8,5 @@ version = "0.1.0"
 name = "plague"
 plugin = true
 
-[dependencies]
+[dev-dependencies]
 compiletest_rs = "0.0.11"
