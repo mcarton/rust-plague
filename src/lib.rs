@@ -101,6 +101,10 @@ fn make_plague<'cx, 'a>(
     should_panic: bool,
     fn_span: Span
 ) -> PResult<'a, Box<MacResult + 'cx>> {
+    if params.node.is_empty() {
+        cx.span_err(params.span, "empty parametrized tests are useless");
+    }
+
     let unpack_tuple = if let &ItemFn(ref decl, _, _, _, _, _) = &fn_ {
         decl.inputs.len() > 1
     }
