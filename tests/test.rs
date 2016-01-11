@@ -26,6 +26,16 @@ plague! {
 }
 
 plague! {
+    for [
+        (1, 1) -> 2,
+        (2, 3) -> 5,
+    ]
+    test fn fooes_ret(a: i32, b: i32) -> i32 {
+        a + b
+    }
+}
+
+plague! {
     for [ 1, 2 ]
     test! fn bar(a: i32) {
         panic!("{}", a);
@@ -62,4 +72,13 @@ mod tests {
 
 plague! {
     for [(&mut vec!["foo"], 1, "bar")] test Vec::insert
+}
+
+plague! {
+    for [
+        ("",) -> 0,
+        ("foo",) -> 3,
+        ("foo\u{0}bar",) -> 7,
+    ]
+    test str::len
 }
