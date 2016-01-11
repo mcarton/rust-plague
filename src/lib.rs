@@ -75,7 +75,7 @@ fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<Param>>
 
     let should_panic = try!(parser.eat(&Token::Not));
 
-    if parser.look_ahead(1, Token::is_ident) {
+    let result = if parser.look_ahead(1, Token::is_ident) {
         Ok((
             params,
             try!(parse_fn_decl(parser)),
@@ -88,7 +88,13 @@ fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<Param>>
             try!(parse_fn_use(parser)),
             should_panic
         ))
+    };
+
+    if !try!(parser.eat(&Token::Eof)) {
+        parser.span_err(parser.span, &format!("expected end of macro, got `{}`", parser. this_token_to_string()));
     }
+
+    result
 }
 
 type Param = (P<Expr>, Option<P<Expr>>);
