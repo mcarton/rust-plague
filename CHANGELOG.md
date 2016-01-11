@@ -1,9 +1,13 @@
 Change Log
 ==========
 
+0.4.0 — 2015-01-11
+------------------
+* Allow to specify the expected return value.
+
 0.3.0 — 2015-01-10
 ------------------
-* Allow calling external functions directly
+* Allow calling external functions directly.
 
 0.2.0 — 2015-01-10
 ------------------
