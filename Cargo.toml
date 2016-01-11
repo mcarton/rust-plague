@@ -5,7 +5,7 @@ license = "MIT"
 name = "plague"
 keywords = ["parametrized", "test"]
 repository = "https://github.com/mcarton/rust-plague"
-version = "0.5.0"
+version = "0.5.1"
 
 [lib]
 name = "plague"
