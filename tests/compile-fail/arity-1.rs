@@ -2,7 +2,7 @@
 #![plugin(plague)]
 
 plague! {
-    for [1] //~ERROR: expected tuple, the test function has several arguments
+    for [(1,)] //~ERROR: error: this function takes 2 parameters but 1 parameter was supplied
     test fn foo(a: i32, b: i32) {
         assert_eq!(a, b)
     }

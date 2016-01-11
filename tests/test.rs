@@ -2,14 +2,14 @@
 #![plugin(plague)]
 
 plague! {
-    for [ 1, 2 ]
+    for [ (1,), (2,) ]
     test fn foo(a: i32) {
         println!("{}", a);
     }
 }
 
 plague! {
-    for [1 -> 2, 2 -> 4]
+    for [(1,) -> 2, (2,) -> 4]
     test fn foo_ret(a: i32) -> i32 {
         2*a
     }
@@ -36,7 +36,7 @@ plague! {
 }
 
 plague! {
-    for [ 1, 2 ]
+    for [ (1,), (2,) ]
     test! fn bar(a: i32) {
         panic!("{}", a);
     }

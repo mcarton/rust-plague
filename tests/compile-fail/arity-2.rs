@@ -2,7 +2,7 @@
 #![plugin(plague)]
 
 plague! {
-    for [ //~ERROR: this function takes 0 parameters but 1 parameter was supplied [E0061]
+    for [ //~ERROR: this function takes 0 parameters but 2 parameters were supplied
         (1, 2),
     ]
     test fn foo() {

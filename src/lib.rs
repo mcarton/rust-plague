@@ -153,25 +153,17 @@ fn make_plague<'cx, 'a>(
 
     let mut fns = Vec::with_capacity(params.node.len());
 
-    let (ident, fn_, unpack_tuple) = match fn_ {
+    let (ident, fn_) = match fn_ {
         FnKind::Decl { name, fn_, span } => {
-            let unpack_tuple = if let &ItemFn(ref decl, _, _, _, _, _) = &fn_ {
-                decl.inputs.len() > 1
-            }
-            else {
-                panic!();
-            };
-
             let unused = quote_meta_item!(cx, allow(unused));
             let unused = cx.attribute(span, unused);
             fns.push(cx.item(span, name, vec![unused], fn_));
 
-            (name, cx.expr_ident(span, name), unpack_tuple)
+            (name, cx.expr_ident(span, name))
         }
         FnKind::Path(path) => {
             let name = path.segments.iter().last().unwrap().identifier;
-            // TODO: find a way to resolve the function
-            (name, cx.expr_path(path), true)
+            (name, cx.expr_path(path))
         }
     };
 
@@ -187,7 +179,7 @@ fn make_plague<'cx, 'a>(
 
     let span = params.span;
     for (i, param) in params.node.iter().enumerate() {
-        let params = try!(make_params(parser, &param.0, unpack_tuple));
+        let params = try!(make_params(parser, &param.0));
         let fn_ = make_test_fn(cx, span, fn_.clone(), params, &param.1);
 
         fns.push(cx.item(
@@ -230,18 +222,11 @@ fn make_test_fn<'cx>(
     )
 }
 
-fn make_params<'a>(
-    parser: &mut Parser<'a>,
-    params: &P<Expr>,
-    unpack_tuple: bool
-) -> PResult<'a, Vec<P<Expr>>> {
-    if !unpack_tuple {
-        Ok(vec![params.clone()])
-    }
-    else if let ExprTup(ref params) = params.node {
+fn make_params<'a>(parser: &mut Parser<'a>, params: &P<Expr>) -> PResult<'a, Vec<P<Expr>>> {
+    if let ExprTup(ref params) = params.node {
         Ok(params.clone())
     }
     else {
-        Err(parser.span_fatal(params.span, "expected tuple, the test function has several arguments"))
+        Err(parser.span_fatal(params.span, "expected tuple literal"))
     }
 }
