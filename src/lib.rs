@@ -164,13 +164,8 @@ fn make_plague<'cx, 'a>(
                 panic!();
             };
 
-            let unused = cx.attribute(span, cx.meta_list(
-                    span,
-                    intern("allow").as_str(),
-                    vec![
-                        cx.meta_word(span, intern("unused").as_str())
-                    ]
-            ));
+            let unused = quote_meta_item!(cx, allow(unused));
+            let unused = cx.attribute(span, unused);
             fns.push(cx.item(span, name, vec![unused], fn_));
 
             (name, cx.expr_ident(span, name), unpack_tuple)
@@ -182,17 +177,14 @@ fn make_plague<'cx, 'a>(
         }
     };
 
-    let attributes = {
-        let make_attr = |name| {
-            cx.attribute(DUMMY_SP, cx.meta_word(DUMMY_SP, intern(name).as_str()))
-        };
-
-        if should_panic {
-            vec![make_attr("test"), make_attr("should_panic")]
-        }
-        else {
-            vec![make_attr("test")]
-        }
+    let attributes = if should_panic {
+        vec![
+            cx.attribute(DUMMY_SP, quote_meta_item!(cx, test)),
+            cx.attribute(DUMMY_SP, quote_meta_item!(cx, should_panic)),
+        ]
+    }
+    else {
+        vec![cx.attribute(DUMMY_SP, quote_meta_item!(cx, test))]
     };
 
     let span = params.span;
@@ -219,15 +211,16 @@ fn make_test_fn<'cx>(
     ret: &Option<P<Expr>>,
 ) -> Item_ {
     let call = cx.expr_call(span, fn_, params);
-    let block = if let Some(ref exp_ret) = *ret {
-        let expr = quote_expr!(cx, {
+    let call = if let Some(ref exp_ret) = *ret {
+        quote_expr!(cx, {
             assert_eq!($exp_ret, $call);
-        });
-        cx.block_expr(expr)
+        })
     }
     else {
-        cx.block_expr(call)
+        call
     };
+
+    let block = cx.block_expr(call);
 
     Item_::ItemFn(
         P(FnDecl { inputs: vec![], output: FunctionRetTy::DefaultReturn(DUMMY_SP), variadic: false }),
