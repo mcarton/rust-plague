@@ -14,13 +14,13 @@ fn pos(haystack: &[u64], needle: u64) -> Option<usize> {
 
 plague! {
     for [
-        (&[], 42) -> None,
-        (&[42], 42) -> Some(0),
+        'empty (&[], 42) -> None,
+        'unary (&[42], 42) -> Some(0),
         (&[42, 1337], 42) -> Some(0),
         (&[42, 1337, 42], 42) -> Some(0),
         (&[1337, 42], 42) -> Some(1),
         (&[0, 1, 2, 3, 4, 5, 42], 42) -> Some(6),
-        (&[0, 1, 2, 3, 4, 5, 6], 42) -> None,
+        'not_found (&[0, 1, 2, 3, 4, 5, 6], 42) -> None,
     ]
     test pos
 }

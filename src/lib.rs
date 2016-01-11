@@ -11,7 +11,7 @@ use syntax::abi::Abi;
 use syntax::ast::Expr_::ExprTup;
 use syntax::ast::Item_::ItemFn;
 use syntax::ast::{
-    Constness, Expr, FnDecl, FunctionRetTy, Generics, Ident, Item_, Path, TokenTree, Unsafety
+    Constness, Expr, FnDecl, FunctionRetTy, Generics, Ident, Item_, Lifetime, Path, TokenTree, Unsafety
 };
 use syntax::codemap::{DUMMY_SP, Span, Spanned};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
@@ -89,9 +89,10 @@ fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<Param>>
     Ok((params, result, should_panic))
 }
 
-type Param = (P<Expr>, Option<P<Expr>>);
+type Param = (Option<Lifetime>, P<Expr>, Option<P<Expr>>);
 
 fn parse_param<'a>(parser: &mut Parser<'a>) -> PResult<'a, Param> {
+    let name = try!(parser.parse_opt_lifetime());
     let expr = try!(parser.parse_expr());
 
     let ret = if try!(parser.eat(&Token::RArrow)) {
@@ -101,7 +102,7 @@ fn parse_param<'a>(parser: &mut Parser<'a>) -> PResult<'a, Param> {
         None
     };
 
-    Ok((expr, ret))
+    Ok((name, expr, ret))
 }
 
 fn parse_fn_use<'a>(parser: &mut Parser<'a>) -> PResult<'a, FnKind> {
@@ -179,12 +180,19 @@ fn make_plague<'cx, 'a>(
 
     let span = params.span;
     for (i, param) in params.node.iter().enumerate() {
-        let params = try!(make_params(parser, &param.0));
-        let fn_ = make_test_fn(cx, span, fn_.clone(), params, &param.1);
+        let params = try!(make_params(parser, &param.1));
+        let fn_ = make_test_fn(cx, span, fn_.clone(), params, &param.2);
+
+        let name = if let Some(name) = param.0 {
+            format!("{}{}", ident.name, name.name)
+        }
+        else {
+            format!("{}#{}", ident.name, i)
+        };
 
         fns.push(cx.item(
             span,
-            Ident::new(intern(&format!("{}_{}", ident.name, i)), ident.ctxt),
+            Ident::new(intern(&name), ident.ctxt),
             attributes.clone(),
             fn_
         ));

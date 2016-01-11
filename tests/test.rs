@@ -76,9 +76,9 @@ plague! {
 
 plague! {
     for [
-        ("",) -> 0,
+        'empty ("",) -> 0,
         ("foo",) -> 3,
-        ("foo\u{0}bar",) -> 7,
+        'c_str ("foo\u{0}bar",) -> 7,
     ]
     test str::len
 }
