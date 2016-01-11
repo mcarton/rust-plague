@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+cargo rustc --example=cmp -- --test
+./target/debug/examples/cmp
