@@ -42,4 +42,6 @@ fn without_plague() {
     }
 }
 
-fn main() {}
+fn main() {
+    println!("pos({:?}, {}) == {:?}", &[3, 14, 15, 9], 2, pos(&[3, 14, 15, 9], 2));
+}
