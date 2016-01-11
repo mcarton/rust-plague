@@ -9,6 +9,13 @@ plague! {
 }
 
 plague! {
+    for [1 -> 2, 2 -> 4]
+    test fn foo_ret(a: i32) -> i32 {
+        2*a
+    }
+}
+
+plague! {
     for [
         (1, 1),
         (2, 2),

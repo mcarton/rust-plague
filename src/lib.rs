@@ -1,4 +1,5 @@
 #![feature(plugin_registrar)]
+#![feature(quote)]
 #![feature(rustc_private)]
 #![feature(slice_patterns)]
 
@@ -9,14 +10,16 @@ use rustc_plugin::Registry;
 use syntax::abi::Abi;
 use syntax::ast::Expr_::ExprTup;
 use syntax::ast::Item_::ItemFn;
-use syntax::ast::{Constness, Expr, FnDecl, FunctionRetTy, Generics, Ident, Item_, Path, TokenTree, Unsafety};
+use syntax::ast::{
+    Constness, Expr, FnDecl, FunctionRetTy, Generics, Ident, Item_, Path, TokenTree, Unsafety
+};
 use syntax::codemap::{DUMMY_SP, Span, Spanned};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::ext::build::AstBuilder;
 use syntax::parse::PResult;
 use syntax::parse::common::seq_sep_trailing_allowed;
 use syntax::parse::parser::{Parser, PathParsingMode};
-use syntax::parse::token::get_ident_interner;
+use syntax::parse::token::intern;
 use syntax::parse::token::keywords::Keyword;
 use syntax::parse::token::{DelimToken, Token};
 use syntax::ptr::P;
@@ -58,21 +61,21 @@ enum FnKind {
     Path(Path)
 }
 
-fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<P<Expr>>>, FnKind, bool)> {
+fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<Param>>, FnKind, bool)> {
     try!(parser.expect_keyword(Keyword::For));
 
     let params = try!(parser.parse_seq(
         &Token::OpenDelim(DelimToken::Bracket),
         &Token::CloseDelim(DelimToken::Bracket),
         seq_sep_trailing_allowed(Token::Comma),
-        |parser| parser.parse_expr()
+        parse_param
     ));
 
     try!(expect_keyword(parser, "test"));
 
     let should_panic = try!(parser.eat(&Token::Not));
 
-    if parser.look_ahead(1, |t| { if let Token::Ident(..) = *t { true } else { false } }) {
+    if parser.look_ahead(1, Token::is_ident) {
         Ok((
             params,
             try!(parse_fn_decl(parser)),
@@ -86,6 +89,21 @@ fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<P<Expr>
             should_panic
         ))
     }
+}
+
+type Param = (P<Expr>, Option<P<Expr>>);
+
+fn parse_param<'a>(parser: &mut Parser<'a>) -> PResult<'a, Param> {
+    let expr = try!(parser.parse_expr());
+
+    let ret = if try!(parser.eat(&Token::RArrow)) {
+        Some(try!(parser.parse_expr()))
+    }
+    else {
+        None
+    };
+
+    Ok((expr, ret))
 }
 
 fn parse_fn_use<'a>(parser: &mut Parser<'a>) -> PResult<'a, FnKind> {
@@ -127,15 +145,13 @@ fn expect_keyword<'a>(parser: &mut Parser<'a>, kw: &str) -> PResult<'a, ()> {
 fn make_plague<'cx, 'a>(
     cx: &'cx mut ExtCtxt,
     parser: &mut Parser<'a>,
-    params: Spanned<Vec<P<Expr>>>,
+    params: Spanned<Vec<Param>>,
     fn_: FnKind,
     should_panic: bool
 ) -> PResult<'a, Box<MacResult + 'cx>> {
     if params.node.is_empty() {
         cx.span_err(params.span, "empty parametrized tests are useless");
     }
-
-    let interner = get_ident_interner();
 
     let mut fns = Vec::with_capacity(params.node.len());
 
@@ -150,9 +166,9 @@ fn make_plague<'cx, 'a>(
 
             let unused = cx.attribute(span, cx.meta_list(
                     span,
-                    interner.intern("allow").as_str(),
+                    intern("allow").as_str(),
                     vec![
-                        cx.meta_word(span, interner.intern("unused").as_str())
+                        cx.meta_word(span, intern("unused").as_str())
                     ]
             ));
             fns.push(cx.item(span, name, vec![unused], fn_));
@@ -168,7 +184,7 @@ fn make_plague<'cx, 'a>(
 
     let attributes = {
         let make_attr = |name| {
-            cx.attribute(DUMMY_SP, cx.meta_word(DUMMY_SP, interner.intern(name).as_str()))
+            cx.attribute(DUMMY_SP, cx.meta_word(DUMMY_SP, intern(name).as_str()))
         };
 
         if should_panic {
@@ -181,12 +197,12 @@ fn make_plague<'cx, 'a>(
 
     let span = params.span;
     for (i, param) in params.node.iter().enumerate() {
-        let params = try!(make_params(parser, &param, unpack_tuple));
-        let fn_ = make_test_fn(cx, span, fn_.clone(), params);
+        let params = try!(make_params(parser, &param.0, unpack_tuple));
+        let fn_ = make_test_fn(cx, span, fn_.clone(), params, &param.1);
 
         fns.push(cx.item(
             span,
-            Ident::new(interner.intern(&format!("{}_{}", ident.name, i)), ident.ctxt),
+            Ident::new(intern(&format!("{}_{}", ident.name, i)), ident.ctxt),
             attributes.clone(),
             fn_
         ));
@@ -199,10 +215,19 @@ fn make_test_fn<'cx>(
     cx: &'cx mut ExtCtxt,
     span: Span,
     fn_: P<Expr>,
-    params: Vec<P<Expr>>
+    params: Vec<P<Expr>>,
+    ret: &Option<P<Expr>>,
 ) -> Item_ {
     let call = cx.expr_call(span, fn_, params);
-    let block = cx.block_expr(call);
+    let block = if let Some(ref exp_ret) = *ret {
+        let expr = quote_expr!(cx, {
+            assert_eq!($exp_ret, $call);
+        });
+        cx.block_expr(expr)
+    }
+    else {
+        cx.block_expr(call)
+    };
 
     Item_::ItemFn(
         P(FnDecl { inputs: vec![], output: FunctionRetTy::DefaultReturn(DUMMY_SP), variadic: false }),
