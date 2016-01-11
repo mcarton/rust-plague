@@ -211,7 +211,12 @@ fn make_test_fn<'cx>(
     let call = cx.expr_call(span, fn_, params);
     let call = if let Some(ref exp_ret) = *ret {
         quote_expr!(cx, {
-            assert_eq!($exp_ret, $call);
+            let exp = $exp_ret;
+            let got = $call;
+
+            if !(got == exp) {
+                panic!("test failed: got `{:?}`, expected `{:?}`", got, exp);
+            }
         })
     }
     else {

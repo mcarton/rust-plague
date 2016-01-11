@@ -40,11 +40,11 @@ The plugin will generate one test function for each parameter set, this way,
 running `cargo test` will show each failed value, instead of just one:
 ```
 running 8 tests
-test pos#5 ... ok
+test pos#4 ... ok
 test pos#2 ... FAILED
 test pos#3 ... FAILED
+test pos#5 ... ok
 test pos'empty ... ok
-test pos#4 ... ok
 test pos'not_found ... ok
 test pos'unary ... FAILED
 test without_plague ... FAILED
@@ -52,13 +52,13 @@ test without_plague ... FAILED
 failures:
 
 ---- pos#2 stdout ----
-	thread 'pos#2' panicked at 'assertion failed: `(left == right)` (left: `Some(0)`, right: `None`)', examples/cmp.rs:15
+	thread 'pos#2' panicked at 'test failed: got `None`, expected `Some(0)`', examples/cmp.rs:15
 
 ---- pos#3 stdout ----
-	thread 'pos#3' panicked at 'assertion failed: `(left == right)` (left: `Some(0)`, right: `Some(2)`)', examples/cmp.rs:15
+	thread 'pos#3' panicked at 'test failed: got `Some(2)`, expected `Some(0)`', examples/cmp.rs:15
 
 ---- pos'unary stdout ----
-	thread 'pos'unary' panicked at 'assertion failed: `(left == right)` (left: `Some(0)`, right: `None`)', examples/cmp.rs:15
+	thread 'pos'unary' panicked at 'test failed: got `None`, expected `Some(0)`', examples/cmp.rs:15
 
 ---- without_plague stdout ----
 	thread 'without_plague' panicked at 'assertion failed: `(left == right)` (left: `None`, right: `Some(0)`)', examples/cmp.rs:41
