@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+0.5.0 — 2015-01-11
+------------------
+* Forbid trailing tokens in macro invocation.
+* Always unpack tuple.
+* Add the ability to name a test case.
+
 0.4.0 — 2015-01-11
 ------------------
 * Allow to specify the expected return value.
