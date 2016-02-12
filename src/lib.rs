@@ -8,10 +8,9 @@ extern crate syntax;
 
 use rustc_plugin::Registry;
 use syntax::abi::Abi;
-use syntax::ast::Expr_::ExprTup;
-use syntax::ast::Item_::ItemFn;
 use syntax::ast::{
-    Constness, Expr, FnDecl, FunctionRetTy, Generics, Ident, Item_, Lifetime, Path, TokenTree, Unsafety
+    Constness, Expr, ExprKind, FnDecl, FunctionRetTy, Generics, Ident, ItemKind, Lifetime, Path,
+    TokenTree, Unsafety
 };
 use syntax::codemap::{DUMMY_SP, Span, Spanned};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
@@ -25,7 +24,7 @@ use syntax::parse::token::{DelimToken, Token};
 use syntax::ptr::P;
 use syntax::util::small_vector::SmallVector;
 
-type ItemInfo = (Ident, Item_);
+type ItemInfo = (Ident, ItemKind);
 
 #[plugin_registrar]
 pub fn plugin_registrar(reg: &mut Registry) {
@@ -55,7 +54,7 @@ pub fn plague_macro<'cx>(cx: &'cx mut ExtCtxt, span: Span, tts: &[TokenTree]) ->
 enum FnKind {
     Decl {
         name: Ident,
-        fn_: Item_,
+        fn_: ItemKind,
         span: Span,
     },
     Path(Path)
@@ -121,7 +120,7 @@ fn parse_fn_decl<'a>(parser: &mut Parser<'a>) -> PResult<'a, FnKind> {
     let decl = try!(parser.parse_fn_decl(false));
     generics.where_clause = try!(parser.parse_where_clause());
     let body = try!(parser.parse_block());
-    let fn_ = ItemFn(decl, unsafety, constness, abi, generics, body);
+    let fn_ = ItemKind::Fn(decl, unsafety, constness, abi, generics, body);
 
     span.hi = parser.last_span.hi;
 
@@ -207,7 +206,7 @@ fn make_test_fn<'cx>(
     fn_: P<Expr>,
     params: Vec<P<Expr>>,
     ret: &Option<P<Expr>>,
-) -> Item_ {
+) -> ItemKind {
     let call = cx.expr_call(span, fn_, params);
     let call = if let Some(ref exp_ret) = *ret {
         quote_expr!(cx, {
@@ -225,8 +224,8 @@ fn make_test_fn<'cx>(
 
     let block = cx.block_expr(call);
 
-    Item_::ItemFn(
-        P(FnDecl { inputs: vec![], output: FunctionRetTy::DefaultReturn(DUMMY_SP), variadic: false }),
+    ItemKind::Fn(
+        P(FnDecl { inputs: vec![], output: FunctionRetTy::Default(DUMMY_SP), variadic: false }),
         Unsafety::Normal,
         Constness::NotConst,
         Abi::Rust,
@@ -236,7 +235,7 @@ fn make_test_fn<'cx>(
 }
 
 fn make_params<'a>(parser: &mut Parser<'a>, params: &P<Expr>) -> PResult<'a, Vec<P<Expr>>> {
-    if let ExprTup(ref params) = params.node {
+    if let ExprKind::Tup(ref params) = params.node {
         Ok(params.clone())
     }
     else {
