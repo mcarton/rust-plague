@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+0.5.2 — 2015-02-12
+------------------
+* Rustup to rustc 1.8.0-nightly (4b2c7030f 2016-02-12)
+
 0.5.0 — 2015-01-11
 ------------------
 * Forbid trailing tokens in macro invocation.
