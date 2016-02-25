@@ -16,7 +16,7 @@ use syntax::codemap::{DUMMY_SP, Span, Spanned};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::ext::build::AstBuilder;
 use syntax::parse::PResult;
-use syntax::parse::common::seq_sep_trailing_allowed;
+use syntax::parse::common::SeqSep;
 use syntax::parse::parser::{Parser, PathParsingMode};
 use syntax::parse::token::intern;
 use syntax::parse::token::keywords::Keyword;
@@ -66,7 +66,7 @@ fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<Param>>
     let params = try!(parser.parse_seq(
         &Token::OpenDelim(DelimToken::Bracket),
         &Token::CloseDelim(DelimToken::Bracket),
-        seq_sep_trailing_allowed(Token::Comma),
+        SeqSep::trailing_allowed(Token::Comma),
         parse_param
     ));
 
