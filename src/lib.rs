@@ -17,9 +17,9 @@ use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::ext::build::AstBuilder;
 use syntax::parse::PResult;
 use syntax::parse::common::SeqSep;
-use syntax::parse::parser::{Parser, PathParsingMode};
+use syntax::parse::parser::{Parser, PathStyle};
 use syntax::parse::token::intern;
-use syntax::parse::token::keywords::Keyword;
+use syntax::parse::token::keywords;
 use syntax::parse::token::{DelimToken, Token};
 use syntax::ptr::P;
 use syntax::util::small_vector::SmallVector;
@@ -61,7 +61,7 @@ enum FnKind {
 }
 
 fn parse_plague<'a>(parser: &mut Parser<'a>) -> PResult<'a, (Spanned<Vec<Param>>, FnKind, bool)> {
-    try!(parser.expect_keyword(Keyword::For));
+    try!(parser.expect_keyword(keywords::For));
 
     let params = try!(parser.parse_seq(
         &Token::OpenDelim(DelimToken::Bracket),
@@ -105,7 +105,7 @@ fn parse_param<'a>(parser: &mut Parser<'a>) -> PResult<'a, Param> {
 }
 
 fn parse_fn_use<'a>(parser: &mut Parser<'a>) -> PResult<'a, FnKind> {
-    let path = try!(parser.parse_path(PathParsingMode::NoTypesAllowed));
+    let path = try!(parser.parse_path(PathStyle::Expr));
 
     Ok(FnKind::Path(path))
 }
