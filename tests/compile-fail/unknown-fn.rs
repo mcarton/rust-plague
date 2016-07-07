@@ -3,7 +3,7 @@
 
 plague! {
     for [()]
-    test bar //~ERROR: error: unresolved name `bar`
+    test bar //~ERROR: unresolved name `bar`
 }
 
 fn main() {}
