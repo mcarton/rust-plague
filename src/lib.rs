@@ -10,7 +10,7 @@ use rustc_plugin::Registry;
 use syntax::abi::Abi;
 use syntax::ast::{
     Constness, Expr, ExprKind, FnDecl, FunctionRetTy, Generics, Ident, ItemKind, Lifetime, Path,
-    TokenTree, Unsafety
+    Unsafety
 };
 use syntax::codemap::{DUMMY_SP, Span, Spanned};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
@@ -22,6 +22,7 @@ use syntax::parse::token::intern;
 use syntax::parse::token::keywords;
 use syntax::parse::token::{DelimToken, Token};
 use syntax::ptr::P;
+use syntax::tokenstream::TokenTree;
 use syntax::util::small_vector::SmallVector;
 
 type ItemInfo = (Ident, ItemKind);
