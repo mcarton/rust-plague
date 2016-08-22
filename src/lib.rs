@@ -18,7 +18,6 @@ use syntax::ext::build::AstBuilder;
 use syntax::parse::PResult;
 use syntax::parse::common::SeqSep;
 use syntax::parse::parser::{Parser, PathStyle};
-use syntax::parse::token::intern;
 use syntax::parse::token::keywords;
 use syntax::parse::token::{DelimToken, Token};
 use syntax::ptr::P;
@@ -192,7 +191,11 @@ fn make_plague<'cx, 'a>(
 
         fns.push(cx.item(
             span,
-            Ident::new(intern(&name), ident.ctxt),
+            //cx.ident_of(&name),
+            Ident {
+                name: cx.name_of(&name),
+                ctxt: ident.ctxt,
+            },
             attributes.clone(),
             fn_
         ));
