@@ -12,7 +12,7 @@ use syntax::ast::{
     Constness, Expr, ExprKind, FnDecl, FunctionRetTy, Generics, Ident, ItemKind, Lifetime, Path,
     Unsafety
 };
-use syntax::codemap::{DUMMY_SP, Span, Spanned};
+use syntax::codemap::{self, DUMMY_SP, Span, Spanned};
 use syntax::ext::base::{DummyResult, ExtCtxt, MacEager, MacResult};
 use syntax::ext::build::AstBuilder;
 use syntax::parse::PResult;
@@ -231,7 +231,7 @@ fn make_test_fn<'cx>(
     ItemKind::Fn(
         P(FnDecl { inputs: vec![], output: FunctionRetTy::Default(DUMMY_SP), variadic: false }),
         Unsafety::Normal,
-        Constness::NotConst,
+        codemap::respan(span, Constness::NotConst),
         Abi::Rust,
         Generics::default(),
         block
