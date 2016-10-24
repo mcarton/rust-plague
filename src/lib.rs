@@ -122,7 +122,7 @@ fn parse_fn_decl<'a>(parser: &mut Parser<'a>) -> PResult<'a, FnKind> {
     let body = try!(parser.parse_block());
     let fn_ = ItemKind::Fn(decl, unsafety, constness, abi, generics, body);
 
-    span.hi = parser.last_span.hi;
+    span.hi = parser.prev_span.hi;
 
     Ok(FnKind::Decl{ name: ident, fn_: fn_, span: span })
 }
